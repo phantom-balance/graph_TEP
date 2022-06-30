@@ -1,5 +1,6 @@
 # Normalize using entire dataset or just NOC??
 import pandas as pd
+import os
 
 def get_data(list, is_train=None):
     noc = pd.read_csv('TEP-profbraatz-dataset/d00.csv')

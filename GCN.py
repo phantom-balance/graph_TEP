@@ -12,15 +12,15 @@ import os
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 num_nodes = 82
-sequence_length = 20
+sequence_length = 15
 Type = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
 num_classes = 22
 learning_rate = 0.003
-num_epochs = 2000
-batch_size = 29
-load_model = False
+num_epochs = 1
+batch_size = 32
+load_model = True
 save_model = True
-embedding_size = 20
+embedding_size = 15
 directed = False
 
 if directed==True:
@@ -58,7 +58,7 @@ class GCN(torch.nn.Module):
         self.conv1 = GCNConv(sequence_length, embedding_size)
         self.conv2 = GCNConv(embedding_size, embedding_size)
         self.fc1 = nn.Linear(embedding_size*num_nodes,300)
-        self.dropout = nn.Dropout(p=0.5)
+        self.dropout = nn.Dropout(p=0.6)
         self.out = nn.Linear(300,num_classes)
 
     def forward(self, x, edge_index, batch_index):
@@ -117,26 +117,28 @@ train_loader = DataLoader(dataset=graph_dat['train'], batch_size=batch_size, shu
 test_loader = DataLoader(dataset=graph_dat['test'], batch_size=batch_size, shuffle=True)
 
 if load_model == True:
-    load_checkpoint(torch.load(f"processed_data/GCN_TEP-{sequence_length}.pth.tar"))
+    load_checkpoint(torch.load(f"processed_data/GCN_TEP-{sequence_length}.pth.tar", map_location=device))
 
 for epoch in range(num_epochs):
-    batch = next(iter(train_loader))
-    batch = batch.to(device)
-    scores = model(batch.x, batch.edge_index, batch.batch)
-    loss = criterion(scores, batch.y)
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+    for batch_idx, batch in enumerate(train_loader):
+        # batch = next(iter(train_loader))
+        batch = batch.to(device)
+        scores = model(batch.x, batch.edge_index, batch.batch)
+        loss = criterion(scores, batch.y)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
-    if save_model==True:
-        if epoch % 100 == 0:
-            checkpoint = {'state_dict': model.state_dict(),
-                          'optimizer': optimizer.state_dict()}
-            save_checkpoint(checkpoint)
-            print("checking accuracy on Testing Set")
-            check_accuracy(test_loader, model)
-            print("checking accuracy on Training Set")
-            check_accuracy(train_loader, model)
+        print(f"Epoch:{epoch}| |Batch_idx:{batch_idx}")
+        if save_model==True:
+            if epoch % 100 == 0:
+                checkpoint = {'state_dict': model.state_dict(),
+                            'optimizer': optimizer.state_dict()}
+                save_checkpoint(checkpoint)
+                print("checking accuracy on Testing Set")
+                check_accuracy(test_loader, model)
+                print("checking accuracy on Training Set")
+                check_accuracy(train_loader, model)
 
 def summary_return(DATA, is_directed=None):
     if is_directed==True:
@@ -150,7 +152,7 @@ def summary_return(DATA, is_directed=None):
     Train_loader = DataLoader(dataset=graph_train_set, batch_size=50, shuffle=False)
     Test_loader = DataLoader(dataset=graph_test_set, batch_size=50, shuffle=False)
 
-    load_checkpoint(torch.load(f"processed_data/GCN_TEP-{sequence_length}.pth.tar"))
+    load_checkpoint(torch.load(f"processed_data/GCN_TEP-{sequence_length}.pth.tar", map_location=device))
 
     y_true = []
     y_pred = []
@@ -188,4 +190,8 @@ def summary_return(DATA, is_directed=None):
         print("enter either test or false")
 
     return y_true, y_pred, y_prob
-    
+
+print("checking accuracy on Testing Set")
+check_accuracy(test_loader, model)
+print("checking accuracy on Training Set")
+check_accuracy(train_loader, model)
