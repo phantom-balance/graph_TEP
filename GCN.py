@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
-from torch_geometric.nn import global_mean_pool as gmp
+# from torch_geometric.nn import global_mean_pool as gmp
 from torch_geometric.loader import DataLoader
 from loader import TEP
 import os
@@ -12,16 +12,18 @@ import os
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 num_nodes = 82
-sequence_length = 15
 Type = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
 num_classes = 22
+
+sequence_length = 15
 learning_rate = 0.003
 num_epochs = 1
 batch_size = 32
-load_model = True
-save_model = True
 embedding_size = 15
 directed = False
+
+load_model = True
+save_model = True
 
 if directed==True:
     if os.path.isfile(f"processed_data/Data_directed/{sequence_length}.pt"):
@@ -57,9 +59,9 @@ class GCN(torch.nn.Module):
         super().__init__()
         self.conv1 = GCNConv(sequence_length, embedding_size)
         self.conv2 = GCNConv(embedding_size, embedding_size)
-        self.fc1 = nn.Linear(embedding_size*num_nodes,300)
-        self.dropout = nn.Dropout(p=0.6)
-        self.out = nn.Linear(300,num_classes)
+        self.fc1 = nn.Linear(embedding_size*num_nodes, 300)
+        self.dropout = nn.Dropout(p=0.5)
+        self.out = nn.Linear(300, num_classes)
 
     def forward(self, x, edge_index, batch_index):
         # print("0",x.shape)
@@ -131,7 +133,7 @@ for epoch in range(num_epochs):
 
         print(f"Epoch:{epoch}| |Batch_idx:{batch_idx}")
         if save_model==True:
-            if epoch % 100 == 0:
+            if batch_idx % 15 == 0:
                 checkpoint = {'state_dict': model.state_dict(),
                             'optimizer': optimizer.state_dict()}
                 save_checkpoint(checkpoint)
