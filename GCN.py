@@ -18,7 +18,7 @@ num_classes = 22
 sequence_length = 15
 learning_rate = 0.003
 num_epochs = 1
-batch_size = 32
+batch_size = 1
 embedding_size = 15
 directed = False
 
@@ -126,6 +126,7 @@ for epoch in range(num_epochs):
         # batch = next(iter(train_loader))
         batch = batch.to(device)
         scores = model(batch.x, batch.edge_index, batch.batch)
+        print(batch.y)
         loss = criterion(scores, batch.y)
         optimizer.zero_grad()
         loss.backward()
