@@ -17,8 +17,8 @@ num_classes = 22
 
 sequence_length = 15
 learning_rate = 0.003
-num_epochs = 1
-batch_size = 1
+num_epochs = 0
+batch_size = 32
 embedding_size = 15
 directed = False
 
@@ -91,9 +91,15 @@ print("Number of parameters: ", sum(p.numel() for p in model.parameters()))
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(),lr=learning_rate)
 
-def save_checkpoint(state, filename=f"processed_data/GCN_TEP-{sequence_length}.pth.tar"):
-    print("__Saving Checkpoint__")
-    torch.save(state, filename)
+if directed==True:
+    def save_checkpoint(state, filename=f"processed_data/GCN_TEP-{sequence_length}_directed.pth.tar"):
+        print("__Saving Checkpoint__")
+        torch.save(state, filename)
+
+else:
+    def save_checkpoint(state, filename=f"processed_data/GCN_TEP-{sequence_length}_undirected.pth.tar"):
+        print("__Saving Checkpoint__")
+        torch.save(state, filename)
 
 def load_checkpoint(checkpoint):
     print("__Loading Checkpoint__")
@@ -118,15 +124,18 @@ def check_accuracy(loader, model):
 train_loader = DataLoader(dataset=graph_dat['train'], batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(dataset=graph_dat['test'], batch_size=batch_size, shuffle=True)
 
-if load_model == True:
-    load_checkpoint(torch.load(f"processed_data/GCN_TEP-{sequence_length}.pth.tar", map_location=device))
+if load_model == True and directed == True:
+    load_checkpoint(torch.load(f"processed_data/GCN_TEP-{sequence_length}_directed.pth.tar", map_location=device))
+
+elif load_model == True and directed == False:
+    load_checkpoint(torch.load(f"processed_data/GCN_TEP-{sequence_length}_undirected.pth.tar", map_location=device))
 
 for epoch in range(num_epochs):
     for batch_idx, batch in enumerate(train_loader):
         # batch = next(iter(train_loader))
         batch = batch.to(device)
         scores = model(batch.x, batch.edge_index, batch.batch)
-        print(batch.y)
+        # print(batch.y)
         loss = criterion(scores, batch.y)
         optimizer.zero_grad()
         loss.backward()
@@ -134,7 +143,7 @@ for epoch in range(num_epochs):
 
         print(f"Epoch:{epoch}| |Batch_idx:{batch_idx}")
         if save_model==True:
-            if batch_idx % 15 == 0:
+            if batch_idx % 25 == 0:
                 checkpoint = {'state_dict': model.state_dict(),
                             'optimizer': optimizer.state_dict()}
                 save_checkpoint(checkpoint)
@@ -155,7 +164,11 @@ def summary_return(DATA, is_directed=None):
     Train_loader = DataLoader(dataset=graph_train_set, batch_size=50, shuffle=False)
     Test_loader = DataLoader(dataset=graph_test_set, batch_size=50, shuffle=False)
 
-    load_checkpoint(torch.load(f"processed_data/GCN_TEP-{sequence_length}.pth.tar", map_location=device))
+    if is_directed:
+        load_checkpoint(torch.load(f"processed_data/GCN_TEP-{sequence_length}_directed.pth.tar", map_location=device))
+
+    else:
+        load_checkpoint(torch.load(f"processed_data/GCN_TEP-{sequence_length}_undirected.pth.tar", map_location=device))
 
     y_true = []
     y_pred = []
